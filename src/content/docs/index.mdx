@@ -1,0 +1,33 @@
+---
+title: Flow Trading Service
+description: Get started building your docs site with Starlight.
+template: splash
+hero:
+  tagline: Proposition for our docs site
+  image:
+    file: ../../assets/houston.webp
+  actions:
+    - text: Getting Started
+      link: /guides/getting-started/
+      icon: right-arrow
+    - text: Forward Market Design
+      link: https://forwardmarketdesign.com/
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+## Next steps
+
+<CardGrid stagger>
+  <Card title="Bring in those CURL commands" icon="add-document">
+    And list them as <a href="https://starlight.astro.build/components/steps/">steps</a> in your guide.
+  </Card>
+  <Card title="Configure your site" icon="setting">
+    Edit your `sidebar` and other config in `astro.config.mjs`.
+  </Card>
+  <Card title="Read the docs" icon="open-book">
+    Learn more in [the Starlight Docs](https://starlight.astro.build/).
+  </Card>
+</CardGrid>
