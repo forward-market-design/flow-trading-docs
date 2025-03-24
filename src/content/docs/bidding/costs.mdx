@@ -1,0 +1,30 @@
+---
+title: Costs
+description: Understanding costs in flow trading
+---
+
+In a flow trading market, bidders create submissions out of various bid
+primitives. There are only two such primitives: an *auth* and a *cost*.
+This guide provides an explanation for the latter.
+
+## What is a Cost?
+
+A cost is an explicit definition of a *group* of auths alongside a demand curve.
+Collectively, the costs measure the utility for any potential trade outcome. Thus,
+permit [the core optimization](/advanced/optimization) to find an outcome that
+maximizes social welfare (gains from trade) within the set of feasible trades.
+
+## What is a Group?
+
+The [flow trading paper](https://cramton.umd.edu/papers2020-2024/budish-cramton-kyle-lee-malec-flow-trading.pdf)
+pairs a demand curve directly to a portfolio, while this implementation introduces one layer of separation. This
+layer of separation allows for *substitution* effects between portfolios. That is, there might be different products
+that are "close enough" to one another that a bidder might be indifferent between them (up to some scaling). A group
+allows a bidder to specify this indifference
+
+## How is Utility Specified?
+
+## A Note on Auths
+(discuss decusion to remove auiths with no costs)
+
+## Summary

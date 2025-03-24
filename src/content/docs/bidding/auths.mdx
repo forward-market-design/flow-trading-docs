@@ -1,0 +1,68 @@
+---
+title: Auths
+description: Understanding auths in flow trading
+---
+
+In a flow trading market, bidders create submissions out of various bid
+primitives. There are only two such primitives: an *auth* and a *cost*.
+This guide provides an explanation for the former, though we make one remark
+regarding costs: an auth *must have* at least one cost referencing it in order
+to trade. This will be covered more in the [costs guide](/bidding/costs).
+
+## What is an Auth?
+
+An auth, short for "authorization", is an explicit definition of a *portfolio* of products
+and an optional interval to constrain trade to.
+
+## What is a Portfolio?
+
+In flow trading, products are never traded
+directly. Rather, each bidder defines portfolios of products, then trade these portfolios in
+strict, proportional accordance with the weights in the portfolio.
+
+Suppose a market contains products `A` and `B` (among others). The following are all examples of portfolios:
+```typescript
+// A "singleton" portfolio that trades only A
+P1 = { A: 1.0 }
+// A portfolio that trades both A and B **in equal amounts**
+P2 = { A: 1.0, B: 1.0 }
+// A portfolio that replaces A with B (or vice versa)
+P3 = { A: 0.5, B: -0.75 }
+```
+
+There are no restrictions on the signs or magnitudes of the weights. Buying 1
+unit of a portfolio will buy 1 times the associated weight for each underlying
+product; selling 1 unit will do the same. Flow trading assumes the unifying
+convention of buying as positive demand and selling as negative demand. Thus,
+buying 4 units of `P3` corresponds to buying 2 units of `A` and selling 3 units
+of `B`.
+
+## How is an Auth Constrained?
+
+Unbounded trade (even when bound proportionally as above) is rarely desired.
+Thus, an auth also allows for specifying minimum and maximum rates of trade
+and total trade. These minima and maxima are specified with respect to the
+positive/negative demand convention.
+
+For example, coupling the portfolio `P1`
+to `min_rate = 0` restricts the auth to only the buying of `P1` (selling is
+forbidden). Conversely, setting `max_rate = 0` would restrict the auth to only
+the selling of `P1`. It is important to note that this is only a statement of
+what *this* auth is allowed to trade; if the product `A` is *also* involved in another
+auth's portfolio, the underlying product may still be bought or sold if the
+other auth allows for it.
+
+The only restriction on these constraints is that `min_rate <= 0 <= max_rate`. (If omitted, they default to the appropriately signed infinity.)
+
+We also support minimum and maximum overall trade constraints: as each submission is being prepared for an auction, the server will consider each auth's overall total trade that has occurred across all previous auctions and additionally impose any further restriction on minimum and maximum rates such that the minimum and maximum trade amounts are respected. That is, at each auction the following calculation is performed for each auth:
+```text
+min_trade <- min(0, max(min_trade - current_trade, min_rate * duration))
+max_trade <- max(0, min(max_trade - current_trade, max_rate * duration))
+```
+
+Note that each auction has an associated duration, e.g. if an auction is scheduled for every hour, the duration is 1 hour.
+
+## Summary
+
+In flow trading, products are not directly bid upon. Instead, each bidder authorizes trade on strictly-weighted portfolios of products.
+An auth is this pair: the portfolio and the feasible trade set. Costs (discussed next), allow a bidder to express preferences over the set of all feasible trades.

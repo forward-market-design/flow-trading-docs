@@ -1,0 +1,56 @@
+---
+title: Quick Start
+description: Download and run a basis flow trading service
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+This guide will walk you through downloading, compiling, and running a flow trading server. Basic familiarity with a command-line, bash-like shell is assumed.
+
+## Setup
+
+This guide assumes that the reader has both CMake and Rust >= 1.8.5 installed on their computer.
+
+* CMake can be [downloaded directly](https://cmake.org/download/) or installed via your system's packaging utility, e.g. `brew install cmake` or `apt-get install cmake`.
+* Rust can be installed via [Rustup](https://rustup.rs/).
+
+If both	`which cmake` and `which cargo` return a path, your system is ready for the next step.
+
+## Downloading and Installing
+
+The demonstration server is available directly from [crates.io](https://crates.io), or can be built from source [cloning our repository](https://github.com/forward-market-design/flow-trading-service).
+
+### Option 1: Install Directly
+The following command will download and compile the latest release of the flow trading demonstration server:
+```bash
+cargo install fts-demo
+```
+
+### Option 2: Build from Repository
+```bash
+# Clone the repository if necessary
+git clone https://github.com/forward-market-design/flow-trading-service.git
+cd flow-trading-service
+
+# Compile and run the demonstration server
+cargo build --release --bin fts-demo
+```
+
+<Aside type="note">
+The rest of this guide assumes `fts-demo` is directly available in your system path. If you build from source, you will need to explicitly refer to the binary target, e.g. replace `fts-demo` with `./target/release/fts-demo`.
+</Aside>
+
+## Running the Server
+
+Either option above will download the project dependencies and build the software. To launch a server, run
+```bash
+fts-demo --api-secret SECRET --trade-rate 1h
+```
+
+This run the server on the default port 8080. The OpenAPI schema can be explored at http://localhost:8080/rapidoc if the server is successfully running. A Dockerfile is also available to build and run the binary.
+
+The available configuration options are available via	`fts-demo --help` and are discussed in the [project README](https://github.com/forward-market-design/flow-trading-service/blob/main/fts-demo/README.md#configuration). 
+
+## Next Steps
+
+It is recommended to walkthrough a [simple trading session](/guides/simple-trading-session) to gain basic familiarity with the server architecture and a high-level understanding of the bid language.
