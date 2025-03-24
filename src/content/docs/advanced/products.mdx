@@ -1,0 +1,23 @@
+---
+title: Hierarchical Products
+description: A brief note on hierarchical product relationships
+---
+
+## A Note on Products
+
+Since flow trading is trade-over-time, it stands to reason that the products
+being traded might also change over time. In particular, for a forward market,
+as real-time approaches a product may be "refined" into smaller delivery
+intervals. That is, a monthly product is refined into daily products, and these
+daily products into hourly products.
+
+A daily product is implicitly a portfolio of its hourly products. Thus, a flow
+trading implementation is more than capable of handling these dynamic partition
+events without requiring a bidder to create a new auth in the finer product basis.
+
+Our reference implementation does precisely this, allowing one to specify a "parent"
+product when creating a new product, along with a conversion ratio. (Depending on the
+application, this ratio is likely either `1.0` or `new duration / old duration`.)
+
+The server auth endpoints allow for querying the original specified portfolio definition
+as well as the dynamic, implicit definition (on the finest basis of products available).

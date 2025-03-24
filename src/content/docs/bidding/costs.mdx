@@ -11,20 +11,83 @@ This guide provides an explanation for the latter.
 
 A cost is an explicit definition of a *group* of auths alongside a demand curve.
 Collectively, the costs measure the utility for any potential trade outcome. Thus,
-permit [the core optimization](/advanced/optimization) to find an outcome that
+costs permit [the core optimization](/advanced/optimization) to find an outcome that
 maximizes social welfare (gains from trade) within the set of feasible trades.
 
 ## What is a Group?
 
 The [flow trading paper](https://cramton.umd.edu/papers2020-2024/budish-cramton-kyle-lee-malec-flow-trading.pdf)
-pairs a demand curve directly to a portfolio, while this implementation introduces one layer of separation. This
-layer of separation allows for *substitution* effects between portfolios. That is, there might be different products
-that are "close enough" to one another that a bidder might be indifferent between them (up to some scaling). A group
-allows a bidder to specify this indifference
+pairs a demand curve directly to a portfolio, so the distinct separation between an auth and a cost is not present
+in the paper. In developing the reference server, it was found formally separating the two provided
+some advantages in the software implementation as well as enabled additional flexibility in the bid language.
+
+This flexibility relates to *substitution*: when a group consists of a single auth with weight 1, the associated demand curve
+controls the rate of trade of the auth directly. If the group instead consists of two auths each with weight 1, then the optimization
+gains a degree of freedom to mix-and-match the two auths in a way that maximizes gains from trade. If the two auths are not perfect substitutes,
+they can have different coefficients (even potentially of mixed signs).
+
+Superficially (but not semantically), groups look a lot like portfolios, but with auth ids keyed to weights instead of product ids. For example, supposing the bidder has defined auths A1 and A2,
+the following are all valid groups:
+```typescript
+// A "singleton" group that directly prices A1
+G1 = { A1: 1.0 }
+// A "substitution" group that treats A1 and A2 as perfect substitutes
+G2 = { A1: 1.0, A2: 1.0 }
+// An otherwise perfectly valid group
+G3 = { A1: 0.5, A2: -0.75 }
+```
 
 ## How is Utility Specified?
 
+Utility is specified via a demand curve, with the usual convention of positive and negative rates corresponding to buying and selling.
+Demand curves must be non-increasing and must have a domain permitting zero trade.
+
+The reference implementation accepts two ways to specify a demand curve.
+
+### Piecewise-Linear Demand Curve
+
+The first and primary way to specify a demand curve is via a list of points, which are interpreted to correspond to a piecewise linear curve. A simple example is:
+```typescript
+type PWLDemandCurve = { "rate": number, "price": number }[]
+```
+This list may contain arbitrarily many elements; as mentioned, the only restrictions are
+1. `FirstPoint.rate <= 0 <= LastPoint.rate`
+2. For each point `P[i]`, `P[i].rate <= P[i+1].rate` and `P[i].price >= P[i+1].price`.
+
+Note that this permits "flat" segments on the demand curve. While this is permissable as far as the optimization is concerned,
+there may be a desire for a market operator to impose a validity requirement of having a minimum slope. The reference
+flow trading server does not impose such a requirement, but a market operator is encouraged to enforce such a restriction on their
+systems before forwarding a submission to the server.
+
+### Constant Demand Curve
+
+The second approach to specifying a demand curve assumes a constant price, allowing for a potentially infinite domain. As before, the market operator
+might wish to restrict this type of specification in order to enforce a minimum slope, but the reference server does not require
+this. The constant demand curve is specified as a triplet of (min_rate, max_rate, price):
+```typescript
+type ConstantDemandCurve = { min_rate?: number | null, max_rate?: number | null, price: number }
+```
+If the min and max rates are omitted or set to null, they will be implicitly assigned a value of negative and positive infinity respectively.
+
+
 ## A Note on Auths
-(discuss decusion to remove auiths with no costs)
+
+Costs assign utility to potential trade outcomes constained by the auths.
+Because this utility is additive, there is no distinction between "no costs"
+and a "cost of zero". Thus, in the pathological scenario where an auth has been
+defined but no cost references it, without intervention the optimization would
+assume that all possible trades of this auth are equally preferable and actually
+have no cost to the bidder. This can happen naturally when a bidder creates a new
+auth to replace an existing one with a slightly different portfolio, but neglects
+to replace the cost that references the old auth.
+
+Use of the atomic `/v0/submissions/{bidder_id}` endpoint can help here. Additionally,
+the reference implementation chooses to implicitly constrain an auth to zero trade if
+no cost group references it. If the bidder actually desires to treat the auth as having
+zero cost, they can simply make this desire explicit by defining such a cost with `price = 0`.
+
 
 ## Summary
+
+Costs assign utility to groups of auths, allowing for optimization to select an outcome that maximizes gains from trade and social welfare.
+This outcome will be constrained by the feasible trade regions defined by the auths and the domains of the demand curves defined in the cost.

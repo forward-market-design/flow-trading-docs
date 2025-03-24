@@ -1,0 +1,16 @@
+---
+title: Energy Forward Market
+description: Examples of bidder behavior in an energy forward market
+---
+
+## Load Serving Entity (LSE) in a Energy Forward Market
+
+Suppose an LSE is purchasing energy forward 1 year. They have the expected demand for each hour of every day of this year. Accordingly, they define
+an auth with a portfolio containing 24 hours x 365 days of products, with weights equal to the expected demand. (An LSE might prefer to break this into smaller auths, e.g. by quarter or month, but the point remains the same).
+
+Depending on their trading strategy, they may wish to constrain the auth in several different ways. Their specification of 
+1. `{ min_rate = 0, max_trade = 1 }`.
+
+## TODO:
+
+further work this example, along with how a generator might construct their auths and costs

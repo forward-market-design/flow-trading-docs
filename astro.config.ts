@@ -21,6 +21,14 @@ export default defineConfig({
         label: "Concepts",
         autogenerate: { directory: "bidding" },
       },
+			{
+				label: "Examples",
+				autogenerate: { directory: "examples" },
+			},
+			{
+				label: "Advanced",
+				autogenerate: { directory: "advanced" },
+			}
     ],
   })]
 });
