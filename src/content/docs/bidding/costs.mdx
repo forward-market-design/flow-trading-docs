@@ -3,6 +3,8 @@ title: Costs
 description: Understanding costs in flow trading
 ---
 
+import { Aside } from '@astrojs/starlight/components';
+
 In a flow trading market, bidders create submissions out of various bid
 primitives. There are only two such primitives: an *auth* and a *cost*.
 This guide provides an explanation for the latter.
@@ -26,7 +28,13 @@ controls the rate of trade of the auth directly. If the group instead consists o
 gains a degree of freedom to mix-and-match the two auths in a way that maximizes gains from trade. If the two auths are not perfect substitutes,
 they can have different coefficients (even potentially of mixed signs).
 
-Superficially (but not semantically), groups look a lot like portfolios, but with auth ids keyed to weights instead of product ids. For example, supposing the bidder has defined auths A1 and A2,
+Superficially (but not semantically), groups look a lot like portfolios, but with auth ids keyed to weights instead of product ids.
+
+<Aside type="note">
+Mathematically, it is accurate to think of a portfolio as a direction vector in product space and a group as defining an inner product of a potential trade outcome with the weight vector.
+</Aside>
+
+For example, supposing the bidder has defined auths A1 and A2,
 the following are all valid groups:
 ```typescript
 // A "singleton" group that directly prices A1
@@ -44,9 +52,9 @@ Demand curves must be non-increasing and must have a domain permitting zero trad
 
 The reference implementation accepts two ways to specify a demand curve.
 
-### Piecewise-Linear Demand Curve
+### Option 1: Piecewise-Linear Demand Curve
 
-The first and primary way to specify a demand curve is via a list of points, which are interpreted to correspond to a piecewise linear curve. A simple example is:
+The first and primary way to specify a demand curve is via a list of points, which are interpreted to correspond to a piecewise linear curve. This specification takes the form of:
 ```typescript
 type PWLDemandCurve = { "rate": number, "price": number }[]
 ```
@@ -59,16 +67,21 @@ there may be a desire for a market operator to impose a validity requirement of 
 flow trading server does not impose such a requirement, but a market operator is encouraged to enforce such a restriction on their
 systems before forwarding a submission to the server.
 
-### Constant Demand Curve
+### Option 2: Constant Demand Curve
 
 The second approach to specifying a demand curve assumes a constant price, allowing for a potentially infinite domain. As before, the market operator
 might wish to restrict this type of specification in order to enforce a minimum slope, but the reference server does not require
 this. The constant demand curve is specified as a triplet of (min_rate, max_rate, price):
 ```typescript
-type ConstantDemandCurve = { min_rate?: number | null, max_rate?: number | null, price: number }
+type ConstantDemandCurve = {
+	// negative infinity if omitted or null
+	min_rate?: number | null,
+	// positive infinity if omitted or null
+	max_rate?: number | null,
+	// the constant price to extend across the domain
+	price: number
+}
 ```
-If the min and max rates are omitted or set to null, they will be implicitly assigned a value of negative and positive infinity respectively.
-
 
 ## A Note on Auths
 

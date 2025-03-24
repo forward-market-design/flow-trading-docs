@@ -3,14 +3,27 @@ title: Energy Forward Market
 description: Examples of bidder behavior in an energy forward market
 ---
 
-## Load Serving Entity (LSE) in a Energy Forward Market
+## Load Serving Entity (LSE)
 
 Suppose an LSE is purchasing energy forward 1 year. They have the expected demand for each hour of every day of this year. Accordingly, they define
 an auth with a portfolio containing 24 hours x 365 days of products, with weights equal to the expected demand. (An LSE might prefer to break this into smaller auths, e.g. by quarter or month, but the point remains the same).
 
-Depending on their trading strategy, they may wish to constrain the auth in several different ways. Their specification of 
-1. `{ min_rate = 0, max_trade = 1 }`.
+Depending on their trading strategy, they may wish to constrain the auth in several different ways.
 
-## TODO:
+If they are not interested in speculation, they might restrict their trades to buying-only, e.g. `{ min_rate = 0, max_trade = 1 }` and then specify a cost
+with a group consisting of this singular auth, and a demand curve that reflects their willingness to buy ahead-of-schedule.
 
-further work this example, along with how a generator might construct their auths and costs
+If they are open to speculation, they might allow small amounts of selling; thus if they have purchased additional energy ahead-of-schedule, they could potentially net
+some profit by selling it if the market conditions warrant it.
+
+## Generator
+
+A generator primarily concerned with meeting their marginal cost of production
+plus a fixed profit would generate separate auths for each individual product,
+each restricted via `{ max_rate: 0, min_trade: -<PRODUCTION_CAPACITY> }`.
+
+Each of these auths would in turn get their own cost, though if the marginal costs of production
+are the same across products, they could alternatively specify a single cost with a group containing
+each of these auths (all with weight of 1) and a constant demand curve specifying the marginal cost.
+
+If the generator has startup costs, it might decide to bundle a full day's worth of products into a portfolio and trade that, instead of the products individually, allowing the products to subsidize one another with respect to the cost of a day's operations.
