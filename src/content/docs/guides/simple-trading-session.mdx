@@ -59,10 +59,19 @@ PRODUCT=$(\
 )
 ```
 
-The demonstration server defines products via a triplet `(type, from, thru)`,
+The demonstration server defines products via a triplet `(kind, from, thru)`,
 which is suitable for trading in a forward market where products are primarily
-characterized by their delivery window. One can imagine defining products for
-every hour of every day of every year.
+characterized by their delivery window, alongside a categorical label of "what" it is.
+One can imagine defining products for every hour of every day of every year, with
+`kind`'s reflecting a location (`kind = NORTH_AMERICA`), a type (`kind = OPTION`),
+or both (`kind = NORTH_AMERICA/OPTION`).
+
+<Aside type="tip">
+The reference flow trading implementation is easily customized for different product definitions.
+For the example above where `kind` is both a `location` and a `type` joined together, it may be beneficial to
+fork the implementation and swap in a definition that explicitly separates the two, rather
+than relying on a convention of string concatenation.
+</Aside>
 
 ## Submissions
 
