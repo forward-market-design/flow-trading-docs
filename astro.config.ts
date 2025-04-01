@@ -1,5 +1,6 @@
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
+import starlightOpenAPI, { openAPISidebarGroups } from 'starlight-openapi'
 
 // https://astro.build/config
 export default defineConfig({
@@ -12,6 +13,15 @@ export default defineConfig({
       src: "./src/assets/logo.svg",
     },
     tableOfContents: { minHeadingLevel: 2, maxHeadingLevel: 2 },
+    plugins: [
+      // Generate the OpenAPI documentation pages.
+      starlightOpenAPI([
+        {
+          base: 'api',
+          schema: 'schemas/openapi.yaml',
+        },
+      ]),
+    ],
     sidebar: [
       {
         label: "Guides",
@@ -28,7 +38,8 @@ export default defineConfig({
 			{
 				label: "Advanced",
 				autogenerate: { directory: "advanced" },
-			}
+			},
+			...openAPISidebarGroups
     ],
   })]
 });
