@@ -18,7 +18,7 @@ export default defineConfig({
       starlightOpenAPI([
         {
           base: 'api',
-          schema: 'schemas/openapi.yaml',
+          schema: 'https://fts-demo.fly.dev/api-docs/openapi.json',
         },
       ]),
     ],
