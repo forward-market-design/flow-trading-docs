@@ -18,7 +18,10 @@ export default defineConfig({
       starlightOpenAPI([
         {
           base: 'api',
-          schema: 'https://fts-demo.fly.dev/api-docs/openapi.json',
+          schema: 'https://api.fts.forwardmarketdesign.com/api-docs/openapi.json',
+					sidebar: {
+						label: 'API Reference (in development)',
+					}
         },
       ]),
     ],
