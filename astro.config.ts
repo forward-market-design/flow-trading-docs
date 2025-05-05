@@ -6,9 +6,9 @@ import starlightOpenAPI, { openAPISidebarGroups } from 'starlight-openapi'
 export default defineConfig({
   integrations: [starlight({
     title: "Flow Trading Service",
-    social: {
-      github: "https://github.com/forward-market-design/",
-    },
+    social: [
+      { icon: "github", label: "GitHub", href: "https://github.com/forward-market-design/" },
+		],
     logo: {
       src: "./src/assets/logo.svg",
     },

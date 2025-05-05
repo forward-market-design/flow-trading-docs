@@ -76,50 +76,36 @@ than relying on a convention of string concatenation.
 ## Submissions
 
 A bidder has at most one submission, which is comprised of *auths* and *costs*.
-We will keep things simple and define a single auth that trades the single product
-without restriction. We will also assign a cost to this auth that expresses
-the *piecewise-linear, non-increasing* demand for the underlying products. The
+We will keep things simple and define a single auth that trades the single product,
+using a *piecewise-linear, non-increasing* demand curve to express willingness to trade. The
 server takes the unifying convention of positive demand corresponding to buying
 and negative demand to selling.
 
 ```bash
 curl -s -X PUT -H "Content-Type: application/json" -H "Authorization: Bearer $JWTB1" \
   --data '{
-    "auths": [{
-      "auth_id": "11111111-AAAA-8111-8111-111111111111",
-      "portfolio": { "'"$PRODUCT"'": 1 },
-      "data": {}
-    }],
-    "costs": [{
-      "cost_id": "11111111-CCCC-8111-8111-111111111111",
-      "group": { "11111111-AAAA-8111-8111-111111111111": 1 },
-      "data": [{ "rate": 0, "price": 15 }, { "rate": 20, "price": 5 }]
-    }]
-  }' $API_SERVER/v0/submissions/11111111-1111-8111-8111-111111111111 | jq . 
+    "portfolio": { "'"$PRODUCT"'": 1 },
+    "data": {
+      "demand": [{ "rate": 0, "price": 15 }, { "rate": 20, "price": 5 }]
+    }
+  }' $API_SERVER/v0/auths/11111111-AAAA-8111-8111-111111111111 | jq .
 ```
 
-The server will echo the submission back if was successfully parsed and accepted.
+The server will echo the authorization back if was successfully parsed and accepted.
 
 We also define a submission for the other bidder, selling the same product:
 
 ```bash
 curl -s -X PUT -H "Content-Type: application/json" -H "Authorization: Bearer $JWTB2" \
    --data '{
-    "auths": [{
-      "auth_id": "22222222-AAAA-8222-8222-222222222222",
-      "portfolio": { "'"$PRODUCT"'": 1 },
-      "data": {}
-    }],
-    "costs": [{
-        "cost_id": "22222222-CCCC-8222-8222-222222222222",
-        "group": { "22222222-AAAA-8222-8222-222222222222": 1 },
-        "data": { "max_rate": 0, "price": 10 }
-    }]
-  }' $API_SERVER/v0/submissions/22222222-2222-8222-8222-222222222222 | jq . 
+    "portfolio": { "'"$PRODUCT"'": 1 },
+    "data": {
+		  "demand": { "max_rate": 0, "price": 10 }
+	  }
+  }' $API_SERVER/v0/auths/22222222-AAAA-8222-8222-222222222222 | jq . 
 ```
 
 Here we used an alternate specification of the cost, restricting the trade to nonpositive rates.
-
 
 <Aside type="note">
 The respective pages on [auths](/concepts/auths)
@@ -130,23 +116,22 @@ of flow trading so this discussion is best saved for later.
 </Aside>
 
 <Aside type="tip">
-The `/v0/submissions/{bidder_id}` endpoint is actually an atomic wrapper
-around the individual `/v0/auths/{auth_id}` and `/v0/costs/{cost_id}` endpoints.
-It is simpler for the purposes of this guide to utilize this bulk endpoint, but
-sometimes a bidder may prefer to edit their submission's constituent primitives
-directly.
+In addition to the `/v0/auths` endpoint, there is a `/v0/submissions/{bidder_id}`
+that can handle creating or updating multiple auths and costs at once.
 </Aside>
 
 ## Auctions
 
-Auctions are explicitly triggered by an administrator. This allows the logic of
-both when and how often to run an auction to be externalized elsewhere in the
-market operator's systems.
+Auctions can be explicitly triggered by an administrator, or automatically execute on a fixed schedule.
 
 Auctions consist of
 1. Taking all bidders' submissions as-of a point in time,
 2. Defining a duration (e.g. "now" to "now + 1 hour"),
 3. Solving a mathematical optimization program and reporting the results.
+
+If `ftdemo` was run with a value for `--schedule-every`, then the auctions will
+execute on their own according to schedule and the next command may be skipped.
+If this argument was omitted, then an auction must explicitly be triggered.
 
 The following command will run a single auction spanning the next hour:
 ```bash

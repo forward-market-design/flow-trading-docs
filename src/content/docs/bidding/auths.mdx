@@ -5,14 +5,12 @@ description: Understanding auths in flow trading
 
 In a flow trading market, bidders create submissions out of various bid
 primitives. There are only two such primitives: an *auth* and a *cost*.
-This guide provides an explanation for the former, though we make one remark
-regarding costs: an auth *must have* at least one cost referencing it in order
-to trade. This will be covered more in the [costs guide](/bidding/costs).
+This guide provides an explanation for the former.
 
 ## What is an Auth?
 
 An auth, short for "authorization", is an explicit definition of a *portfolio* of products
-and an optional interval to constrain trade to.
+and a demand curve to express willingness-to-trade.
 
 ## What is a Portfolio?
 
@@ -37,32 +35,41 @@ convention of buying as positive demand and selling as negative demand. Thus,
 buying 4 units of `P3` corresponds to buying 2 units of `A` and selling 3 units
 of `B`.
 
-## How is an Auth Constrained?
+## What is a demand curve?
 
-Unbounded trade (even when bound to be proportional, as above) is rarely desired.
-Thus, an auth also allows for specifying minimum and maximum rates of trade
-and total trade. These minima and maxima are specified with respect to the
-positive/negative demand convention.
+A demand curve is a weakly monotone decreasing function `r(p)` which expresses a desired rate of trade as a function of price.
+All auths must specify a demand curve for the associated portfolio. There are two ways to specify this function:
+either as a list of points, defining a piecewise linear function, or as an object declaring a minimum and maximum rate and a constant price.
 
-For example, coupling the portfolio `P1`
-to `min_rate = 0` restricts the auth to only the buying of `P1` (selling is
-forbidden). Conversely, setting `max_rate = 0` would restrict the auth to only
-the selling of `P1`. It is important to note that this is only a statement of
-what *this* auth is allowed to trade; if the product `A` is *also* involved in another
-auth's portfolio, the underlying product may still be bought or sold if the
-other auth allows for it.
-
-The only restriction on these constraints is that `min_rate <= 0 <= max_rate`. (If omitted, they default to the appropriately signed infinity.)
-
-We also support minimum and maximum overall trade constraints: as each submission is being prepared for an auction, the server will consider each auth's overall total trade that has occurred across all previous auctions and additionally impose any further restriction on minimum and maximum rates such that the minimum and maximum trade amounts are respected. That is, at each auction the following calculation is performed for each auth:
-```text
-min_trade <- min(0, max(min_trade - current_trade, min_rate * duration))
-max_trade <- max(0, min(max_trade - current_trade, max_rate * duration))
+We saw examples of both in the [Simple Trading Session](/guides/simple-trading-session/):
+```typescript
+// An example with a piecewise-linear definition of a demand curve
+{
+	"portfolio": { "EXAMPLE_PRODUCT": 1 },
+	"data": {
+		"demand": [{ "rate": 0, "price": 15 }, { "rate": 20, "price": 5 }]
+	}
+}
+```
+and
+```typescript
+// An example with a constant-price definition of a demand curve
+{
+	"portfolio": { "EXAMPLE_PRODUCT": 1 },
+	"data": {
+		"demand": { "max_rate": 0, "price": 10 }
+	}
+}
 ```
 
-Note that each auction has an associated duration, e.g. if an auction is scheduled for every hour, the duration is 1 hour.
+In the second example, notice that while the `max_rate` is set to `0`, there is no `min_rate`.
+This demand curve can only *sell* the portfolio. In the first example, though it uses the piecewise-linear specification,
+this curve admits only non-negative rates in its range, so it can only *buy* the portfolio.
+
+The only restriction on the demand curve is that `rate = 0` must exist within its range.
 
 ## Summary
 
 In flow trading, products are not directly bid upon. Instead, each bidder authorizes trade on strictly-weighted portfolios of products.
-An auth is this pair: the portfolio and the feasible trade set. Costs (discussed next), allow a bidder to express preferences over the set of all feasible trades.
+An auth is this pair: the portfolio and a demand curve that both constrains the feasible trade as well as expresses preferences over outcomes.
+Costs (discussed next) are a generalization of auths, allowing for substitution effects to take place over related portfolios.

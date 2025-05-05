@@ -19,13 +19,16 @@ maximizes social welfare (gains from trade) within the set of feasible trades.
 ## What is a Group?
 
 The [flow trading paper](https://cramton.umd.edu/papers2020-2024/budish-cramton-kyle-lee-malec-flow-trading.pdf)
-pairs a demand curve directly to a portfolio, so the distinct separation between an auth and a cost is not present
-in the paper. In developing the reference server, it was found formally separating the two provided
-some advantages in the software implementation as well as enabled additional flexibility in the bid language.
+pairs a demand curve directly to a portfolio (the pairing of which we call an auth). A cost can either be thought of
+as a generalization of an auth, or as an additional bid primitive to allow for richer preference expression.
 
-This flexibility relates to *substitution*: when a group consists of a single auth with weight 1, the associated demand curve
-controls the rate of trade of the auth directly. If the group instead consists of two auths each with weight 1, then the optimization
-gains a degree of freedom to mix-and-match the two auths in a way that maximizes gains from trade. If the two auths are not perfect substitutes,
+This bid primitive defines a linear combination of portfolios (the *group*) and associates an additional demand curve to this group.
+
+When a group consists of a single auth with weight 1, a cost works similarly to an auth, with the caveat that costs are additive. (So if
+we were to define an auth with a particular demand curve, and additionally define a cost associated exclusively to the same portfolio, the effective demand curve would be the sum of the two).
+
+If the group instead consists of two auths each with weight 1, then the optimization
+gains a degree of freedom to mix-and-match the two auths in a way that maximizes gains from trade: 1 unit of the first portfolio is equivalent to 1 unit of the second, so the optimizer is free to meet an overall total in whichever way it determines is best. If the two auths are not perfect substitutes,
 they can have different coefficients (even potentially of mixed signs).
 
 Superficially (but not semantically), groups look a lot like portfolios, but with auth ids keyed to weights instead of product ids.
@@ -83,24 +86,7 @@ type ConstantDemandCurve = {
 }
 ```
 
-## A Note on Auths
-
-Costs assign utility to potential trade outcomes constained by the auths.
-Because this utility is additive, there is no distinction between "no costs"
-and a "cost of zero". Thus, in the pathological scenario where an auth has been
-defined but no cost references it, without intervention the optimization would
-assume that all possible trades of this auth are equally preferable and actually
-have no cost to the bidder. This can happen naturally when a bidder creates a new
-auth to replace an existing one with a slightly different portfolio, but neglects
-to replace the cost that references the old auth.
-
-Use of the atomic `/v0/submissions/{bidder_id}` endpoint can help here. Additionally,
-the reference implementation chooses to implicitly constrain an auth to zero trade if
-no cost group references it. If the bidder actually desires to treat the auth as having
-zero cost, they can simply make this desire explicit by defining such a cost with `price = 0`.
-
-
 ## Summary
 
 Costs assign utility to groups of auths, allowing for optimization to select an outcome that maximizes gains from trade and social welfare.
-This outcome will be constrained by the feasible trade regions defined by the auths and the domains of the demand curves defined in the cost.
+This outcome will be constrained by the feasible trade regions defined by the auths and costs.
