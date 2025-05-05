@@ -23,7 +23,7 @@ The demonstration server is available directly from [crates.io](https://crates.i
 ### Option 1: Install Directly
 The following command will download and compile the latest release of the flow trading demonstration server:
 ```bash
-cargo install fts-demo
+cargo install ftdemo
 ```
 
 ### Option 2: Build from Repository
@@ -33,27 +33,26 @@ git clone https://github.com/forward-market-design/flow-trading-service.git
 cd flow-trading-service
 
 # Compile and run the demonstration server
-cargo build --release --bin fts-demo
+cargo build --release --bin ftdemo
 ```
 
 <Aside type="note">
-The rest of this guide assumes `fts-demo` is directly available in your system path. If you build from source, you will need to explicitly refer to the binary target, e.g. replace `fts-demo` with `./target/release/fts-demo`.
+The rest of this guide assumes `ftdemo` is directly available in your system path. If you build from source, you will need to explicitly refer to the binary target, e.g. replace `ftdemo` with `./target/release/ftdemo`.
 </Aside>
 
 ## Running the Server
 
 Either option above will download the project dependencies and build the software. To launch a server, run
 ```bash
-fts-demo --api-secret SECRET --trade-rate 1h
+ftdemo --api-secret SECRET --trade-rate 1h --schedule-every 30s
 ```
 
-This run the server on the default port 8080. The OpenAPI schema can be explored at http://localhost:8080/rapidoc if the server is successfully running. A Dockerfile is also available to build and run the binary.
+This will run the server on the default port 8080 and schedule an auction for every 30 seconds. The OpenAPI schema can be explored at http://localhost:8080/rapidoc if the server is successfully running. A Dockerfile is also available to build and run the binary.
 <Aside type="caution">
 The API is under active development and this OpenAPI schema file is not yet suitable for automated client-generation pipelines.
 </Aside>
 
-
-The available configuration options are available via	`fts-demo --help` and are discussed in the [project README](https://github.com/forward-market-design/flow-trading-service/blob/main/fts-demo/README.md#configuration). 
+The available configuration options are available via	`ftdemo --help` and are discussed in the [project README](https://github.com/forward-market-design/flow-trading-service/blob/main/fts-demo/README.md#configuration). 
 
 ## Next Steps
 
