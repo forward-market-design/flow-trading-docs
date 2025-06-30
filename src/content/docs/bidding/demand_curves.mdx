@@ -1,20 +1,18 @@
 ---
-title: Costs
-description: Understanding costs in flow trading
+title: Demand Curves
+description: Understanding demand curves in flow trading
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
 In a flow trading market, bidders create submissions out of various bid
-primitives. There are only two such primitives: an *auth* and a *cost*.
-This guide provides an explanation for the latter.
+primitives. There are only two such primitives: a *demand curve* and a *portfolio*.
+This guide provides an explanation for the former.
 
-## What is a Cost?
+## What is a Demand Curve?
 
-A cost is an explicit definition of a *group* of auths alongside a demand curve.
-Collectively, the costs measure the utility for any potential trade outcome. Thus,
-costs permit [the core optimization](/advanced/optimization) to find an outcome that
-maximizes social welfare (gains from trade) within the set of feasible trades.
+A demand curve is a function that maps trade rate to a marginal cost, allowing [the core optimization](/advanced/optimization) to find an outcome that
+maximizes social welfare (gains from trade) within the set of feasible trades. The trade rate is the net rate summed over all associated portfolio.
 
 ## What is a Group?
 

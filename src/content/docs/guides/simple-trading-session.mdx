@@ -22,7 +22,7 @@ and authenticaton to external systems controlled by the market operator.
 
 <Aside type="caution">
 For the purposes of this guide, the background flow trading server will be assumed
-to have launched with `---api-secret SECRET`. The examples below will not work
+to have launched with `---secret SECRET`. The examples below will not work
 if the secret is any other value.
 </Aside>
 
@@ -53,9 +53,8 @@ product and store its ID in the environment variable `PRODUCT`.
 ```bash
 PRODUCT=$(\
   curl -s -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $JWTADMIN" \
-    --data '[{ "kind": "DEMO", "from": "2030-01-01T00:00:00Z", "thru": "2030-01-01T06:00:00Z" }]' \
-    $API_SERVER/admin/products \
-  | jq -r '.[0]' \
+    --data '{ "kind": "FORWARD", "from": "2030-01-01T00:00:00Z", "thru": "2030-01-01T06:00:00Z" }' \
+    $API_SERVER/product
 )
 ```
 
@@ -75,50 +74,59 @@ than relying on a convention of string concatenation.
 
 ## Submissions
 
-A bidder has at most one submission, which is comprised of *auths* and *costs*.
-We will keep things simple and define a single auth that trades the single product,
-using a *piecewise-linear, non-increasing* demand curve to express willingness to trade. The
+A bidder provides *demand curves* and *portfolios*, which together form their submission.
+A submission starts with a demand curve, which is a *piecewise-linear, non-increasing*
+function that expresses willingness to trade at different price points. The
 server takes the unifying convention of positive demand corresponding to buying
 and negative demand to selling.
 
 ```bash
-curl -s -X PUT -H "Content-Type: application/json" -H "Authorization: Bearer $JWTB1" \
-  --data '{
-    "portfolio": { "'"$PRODUCT"'": 1 },
-    "data": {
-      "demand": [{ "rate": 0, "price": 15 }, { "rate": 20, "price": 5 }]
-    }
-  }' $API_SERVER/v0/auths/11111111-AAAA-8111-8111-111111111111 | jq .
+DEMAND1=$(\
+	curl -s -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $JWTB1" \
+  	--data '{ "app_data": null, "curve_data": [{ "rate": 0, "price": 15 }, { "rate": 20, "price": 5 }] }' \
+		$API_SERVER/demand | jq -r ".demand_id" \
+)
 ```
 
-The server will echo the authorization back if was successfully parsed and accepted.
-
-We also define a submission for the other bidder, selling the same product:
-
+This creates a demand curve, but since it is not yet associated with a portfolio it will have no impact
+on the batch auctions. We now create a portfolio that trades the single product we created:
 ```bash
-curl -s -X PUT -H "Content-Type: application/json" -H "Authorization: Bearer $JWTB2" \
-   --data '{
-    "portfolio": { "'"$PRODUCT"'": 1 },
-    "data": {
-		  "demand": { "max_rate": 0, "price": 10 }
-	  }
-  }' $API_SERVER/v0/auths/22222222-AAAA-8222-8222-222222222222 | jq . 
+PORTFOLIO1=$(\
+	curl -s -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $JWTB1" \
+  	--data '{ "app_data": null, "demand_group": { "'"$DEMAND1"'": 1 }, "product_group": { "'"$PRODUCT"'": 1 } }' \
+		$API_SERVER/portfolio | jq -r ".portfolio_id" \
+)
+```
+
+Notice that we associate this portfolio to the demand curve we generated. It is
+possible to associate *multiple* portfolios to a single demand curve, in which case they
+act as substitutes for one another.
+
+We now do the same for the second bidder, using an alternative specification to specify a
+constant price demand curve:
+```bash
+DEMAND2=$(\
+	curl -s -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $JWTB2" \
+		--data '{ "app_data": null, "curve_data": { "max_rate": 0, "price": 10 } }' \
+		$API_SERVER/demand | jq -r ".demand_id" \
+)
+PORTFOLIO2=$(\
+	curl -s -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $JWTB2" \
+  	--data '{ "app_data": null, "demand_group": { "'"$DEMAND2"'": 1 }, "product_group": { "'"$PRODUCT"'": 1 } }' \
+		$API_SERVER/portfolio | jq -r ".portfolio_id" \
+)
 ```
 
 Here we used an alternate specification of the cost, restricting the trade to nonpositive rates.
 
 <Aside type="note">
-The respective pages on [auths](/concepts/auths)
-and [costs](/concepts/costs) provide details on
+The respective pages on [demand curves](/concepts/demand_curves)
+and [portfolios](/concepts/portfolios) provide details on
 how they relate to specific outcomes a bidder might seek to achieve.
 Their full definition ties deeply into the underlying mathematics
 of flow trading so this discussion is best saved for later.
 </Aside>
 
-<Aside type="tip">
-In addition to the `/v0/auths` endpoint, there is a `/v0/submissions/{bidder_id}`
-that can handle creating or updating multiple auths and costs at once.
-</Aside>
 
 ## Auctions
 
@@ -126,40 +134,27 @@ Auctions can be explicitly triggered by an administrator, or automatically execu
 
 Auctions consist of
 1. Taking all bidders' submissions as-of a point in time,
-2. Defining a duration (e.g. "now" to "now + 1 hour"),
-3. Solving a mathematical optimization program and reporting the results.
+2. Solving a mathematical optimization program and reporting the results.
 
-If `ftdemo` was run with a value for `--schedule-every`, then the auctions will
-execute on their own according to schedule and the next command may be skipped.
-If this argument was omitted, then an auction must explicitly be triggered.
+If `ftdemo` was configured with a schedule, then the auctions will
+execute on their own according to this schedule. We shall assume
+this is the case, and that at least one batch has executed since making the above submissions.
 
-The following command will run a single auction spanning the next hour:
+We can review how the portfolios are trading, as well as view the product outcomes directly:
 ```bash
-curl -s -i -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $JWTADMIN" \
-  --data '{ "by": "1h", "thru": "'"$(date --date="+1 hour" -Iseconds 2>/dev/null || date -v+1H -Iseconds 2>/dev/null)"'" }' \
-  $API_SERVER/admin/auctions/solve
-```
+# Bidder 1's outcomes, filtered to the most recent auction 
+curl -s -H "Authorization: Bearer $JWTB1" $API_SERVER/portfolio/$PORTFOLIO1/outcomes | jq ".results[0]"
 
-Running an auction may take a few moments, so unlike the other endpoints we
-have interacted with, this endpoint *will not* return the auction results.
-Instead, it should have responded with an `HTTP/1.1 202 Accepted` message,
-which says the solve request was accepted and scheduled for processing.
+# Bidder 2's outcomes, filtered to the most recent auction
+curl -s -H "Authorization: Bearer $JWTB2" $API_SERVER/portfolio/$PORTFOLIO2/outcomes | jq ".results[0]"
 
-To see the outcomes of these auctions once they are available, there are results endpoints available querying:
-```bash
-# Bidder 1's outcomes for each auction 
-curl -s -H "Authorization: Bearer $JWTB1" $API_SERVER/v0/auths/11111111-AAAA-8111-8111-111111111111/outcomes | jq .
-
-# Bidder 2's outcomes for each auction
-curl -s -H "Authorization: Bearer $JWTB2" $API_SERVER/v0/auths/22222222-AAAA-8222-8222-222222222222/outcomes | jq .
-
-# The demonstration product's outcomes for each auction
-curl -s $API_SERVER/v0/products/$PRODUCT/outcomes | jq .
+# Outcomes associated to a product, filtered to the most recent auction
+curl -s -H "Authorization: Bearer $JWTB1" $API_SERVER/product/$PRODUCT/outcomes | jq ".results[0]"
 ```
 
 ## Next Steps
 
-For building a client, the OpenAPI schema (available at http://localhost:8080/rapidoc or wherever the server is running) lists all the available server endpoints.
+For building a client, the OpenAPI schema (available at http://localhost:8080/docs or wherever the server is running) lists all the available server endpoints.
 The documentation available at https://docs.rs/fts-core/latest/fts_core is also a good starting point to learn more about the various operations the server implements.
 
-For learning more about flow trading, it is recommended to read the guides on [auths](/concepts/auths) and [costs](/concepts/costs).
+For learning more about flow trading, it is recommended to read the guides on [demand curves](/concepts/demand_curves) and [portfolios](/concepts/portfolios).

@@ -42,17 +42,43 @@ The rest of this guide assumes `ftdemo` is directly available in your system pat
 
 ## Running the Server
 
-Either option above will download the project dependencies and build the software. To launch a server, run
+Either option above will download the project dependencies and build the software. Running the server requires a configuration file and the JWT secret to authenticate requests with. For example,
 ```bash
-ftdemo --api-secret SECRET --trade-rate 1h --schedule-every 30s
+ftdemo --secret SECRET --config ./config.toml
+```
+will use `SECRET` as the HMAC secret and load the server configuration from `./config.toml`. For the purposes of the quick start, we will use the following configuration:
+```toml:config.toml
+# ./config.toml
+
+# HTTP Server Configuration
+[server]
+# The address and port to bind the server to
+bind_address = "0.0.0.0:8080"
+
+# Database Configuration
+[database]
+# Path to the SQLite database file
+# (If not specified, uses an ephemeral, in-memory database)
+#database_path = "./dev.db"
+  
+# Whether to create the database if it doesn't exist
+create_if_missing = true
+
+[schedule]
+# What "anchor" time to start the auctions from?
+# Combined with `every` below, this dictates the batch schedule
+from = "2025-01-01T00:00:00Z"
+
+# How often to run a batch auction?
+every = "5s"
 ```
 
-This will run the server on the default port 8080 and schedule an auction for every 30 seconds. The OpenAPI schema can be explored at http://localhost:8080/rapidoc if the server is successfully running. A Dockerfile is also available to build and run the binary.
+This will run the server on the default port 8080 and schedule a batched auction every 5 seconds. The OpenAPI schema can be explored at http://localhost:8080/docs if the server is successfully running. A Dockerfile is also available to build and run the binary.
 <Aside type="caution">
 The API is under active development and this OpenAPI schema file is not yet suitable for automated client-generation pipelines.
 </Aside>
 
-The available configuration options are available via	`ftdemo --help` and are discussed in the [project README](https://github.com/forward-market-design/flow-trading-service/blob/main/fts-demo/README.md#configuration). 
+The available configuration options are available via	`ftdemo --help` and are discussed in the [project README](https://github.com/forward-market-design/flow-trading-service/blob/main/ftdemo/README.md). 
 
 ## Next Steps
 
